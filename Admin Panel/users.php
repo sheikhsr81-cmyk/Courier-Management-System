@@ -221,7 +221,7 @@ if (isset($_SESSION['new_user_id'])) {
         <a href="agents.php"> Agents</a>
         <a href="riders.php"> Riders</a>
         <a href="track.php"> Tracking</a>
-        <a href="logout.php"> Logout</a>
+        <a href="admin_login.php"> Logout</a>
     </div>
 
     <div class="main">
