@@ -47,8 +47,90 @@ $delivered = $delivered_row['total'];
 <head>
     <title>👑 Admin Dashboard</title>
 
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Segoe UI, sans-serif;
+        }
 
-    <link rel="stylesheet" href="../style.css">
+        body {
+            background: #f1f5f9;
+        }
+
+        .sidebar {
+            width: 220px;
+            height: 100vh;
+            background: #0f172a;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 20px;
+        }
+
+        .sidebar h2 {
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        .sidebar a {
+            display: block;
+            color: #fff;
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            transition: .3s;
+        }
+
+        .sidebar a:hover {
+            background: #2563eb;
+        }
+
+        .main {
+            margin-left: 240px;
+            padding: 30px;
+        }
+
+        .main h2 {
+            margin-bottom: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .stat {
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .1);
+            text-align: center;
+        }
+
+        .stat h2 {
+            font-size: 35px;
+            color: #0f172a;
+            margin-bottom: 10px;
+        }
+
+        .stat p {
+            font-size: 16px;
+            color: #475569;
+        }
+
+        .card {
+            margin-top: 30px;
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .1);
+        }
+    </style>
+
 </head>
 
 <body>
