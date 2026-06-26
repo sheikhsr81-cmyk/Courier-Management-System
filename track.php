@@ -8,9 +8,10 @@ if (isset($_GET['track'])) {
     $tracking = mysqli_real_escape_string($conn, $_GET['track']);
 
     $query = mysqli_query($conn, "
-        SELECT *
+        SELECT users.*, riders.name AS rider_name
         FROM users
-        WHERE tracking_number='$tracking'
+        LEFT JOIN riders ON users.rider_id = riders.id
+        WHERE users.tracking_number='$tracking'
         LIMIT 1
     ");
 
@@ -40,7 +41,6 @@ if (isset($_GET['track'])) {
             background: #f4f6fb;
         }
 
-        /* NAVBAR */
         .navbar {
             background: #0f172a;
             padding: 16px 8%;
@@ -67,7 +67,26 @@ if (isset($_GET['track'])) {
             color: #3b82f6;
         }
 
-        /* CONTAINER */
+        .nav-links .btn {
+            background: #2563eb;
+            color: white !important;
+            padding: 10px 20px;
+            margin-left: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: 0.3s;
+
+            font-size: 15px;
+        }
+
+        .nav-links .btn:hover {
+            background: #1d4ed8;
+            color: white !important;
+            transform: translateY(-2px);
+        }
+
         .container {
             width: 90%;
             max-width: 700px;
@@ -78,7 +97,6 @@ if (isset($_GET['track'])) {
             overflow: hidden;
         }
 
-        /* HEADER */
         .header {
             background: #0f172a;
             color: white;
@@ -86,12 +104,10 @@ if (isset($_GET['track'])) {
             text-align: center;
         }
 
-        /* CONTENT */
         .content {
             padding: 25px;
         }
 
-        /* SEARCH */
         .search-box {
             display: flex;
             gap: 10px;
@@ -108,7 +124,7 @@ if (isset($_GET['track'])) {
         .search-box button {
             padding: 14px 18px;
             border: none;
-            background: #2563eb;
+            background: #0f172a;
             color: white;
             border-radius: 10px;
             cursor: pointer;
@@ -119,14 +135,12 @@ if (isset($_GET['track'])) {
             background: #1d4ed8;
         }
 
-        /* ERROR */
         .error {
             color: #dc2626;
             text-align: center;
             margin-top: 15px;
         }
 
-        /* CARD */
         .card {
             margin-top: 25px;
             background: #f9fafb;
@@ -134,7 +148,6 @@ if (isset($_GET['track'])) {
             border-radius: 15px;
         }
 
-        /* BADGE */
         .badge {
             display: inline-block;
             padding: 8px 16px;
@@ -145,7 +158,6 @@ if (isset($_GET['track'])) {
             font-size: 13px;
         }
 
-        /* INFO GRID */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -171,7 +183,6 @@ if (isset($_GET['track'])) {
             color: #111827;
         }
 
-        /* PROGRESS BAR */
         .progress {
             width: 100%;
             height: 10px;
@@ -186,7 +197,6 @@ if (isset($_GET['track'])) {
             background: #22c55e;
         }
 
-        /* STEPS */
         .step {
             background: white;
             padding: 10px 12px;
@@ -202,7 +212,21 @@ if (isset($_GET['track'])) {
             font-weight: 600;
         }
 
-        /* FOOTER */
+        .print-btn {
+            background: #16a34a;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+            margin-top: 15px;
+            transition: .3s;
+        }
+
+        .print-btn:hover {
+            background: #15803d;
+        }
 
         .footer {
             background: #0f172a;
@@ -248,7 +272,6 @@ if (isset($_GET['track'])) {
             color: #94a3b8;
         }
 
-        /* MOBILE */
         @media(max-width:600px) {
             .info-grid {
                 grid-template-columns: 1fr;
@@ -257,36 +280,19 @@ if (isset($_GET['track'])) {
             .search-box {
                 flex-direction: column;
             }
+
+            .search-box input,
+            .search-box button {
+                width: 100%;
+            }
         }
 
-        /* ===== RESPONSIVE PATCH (NO LAYOUT CHANGE) ===== */
-
-        /* Prevent horizontal scroll on small screens */
         @media(max-width:768px) {
             body {
                 overflow-x: hidden;
             }
         }
 
-        /* Make only input/button usable on small screens (no layout shift) */
-        @media(max-width:600px) {
-            .search-box input {
-                width: 100%;
-            }
-
-            .search-box button {
-                width: 100%;
-            }
-        }
-
-        /* Prevent grid breaking visually (NO structure change) */
-        @media(max-width:600px) {
-            .info-grid {
-                width: 100%;
-            }
-        }
-
-        /* Text scaling only (no layout movement) */
         @media(max-width:480px) {
             .header h2 {
                 font-size: 18px;
@@ -300,12 +306,38 @@ if (isset($_GET['track'])) {
                 font-size: 14px;
             }
         }
+
+        /* --- PRINT SETTINGS --- */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #printArea,
+            #printArea * {
+                visibility: visible;
+            }
+
+            #printArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+                background: white;
+            }
+
+            .print-btn {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 
 <body>
 
-    <!-- NAVBAR -->
     <nav class="navbar">
         <div class="logo">
             <a href="index.php">📦 Courier Management System</a>
@@ -315,24 +347,23 @@ if (isset($_GET['track'])) {
             <a href="index.php">Home</a>
             <a href="about.php">About</a>
             <a href="track.php">Track</a>
-            <a href="register.php">Register Now</a>
+            <a href="login.php">Login</a>
+            <a href="register.php" class="btn">Register Now</a>
 
         </div>
     </nav>
     <br><br><br>
-    <div class="container">
 
+    <div class="container">
         <div class="header">
             <h2>📍 Shipment Tracking</h2>
         </div>
 
         <div class="content">
-
             <form method="GET">
                 <div class="search-box">
                     <input type="text" name="track" placeholder="Enter Tracking Number"
                         value="<?php echo isset($_GET['track']) ? htmlspecialchars($_GET['track']) : ''; ?>" required>
-
                     <button type="submit">Track</button>
                 </div>
             </form>
@@ -342,33 +373,34 @@ if (isset($_GET['track'])) {
             <?php } ?>
 
             <?php if ($result) {
-
                 $status = strtolower(trim($result['status']));
-
                 $steps = [
                     "pending",
                     "picked up",
                     "in transit",
+                    "out for delivery",
                     "delivered"
                 ];
 
                 $current = array_search($status, $steps);
                 if ($current === false)
                     $current = -1;
-
+                 
                 $progress = "10%";
-
                 if ($status == "pending")
-                    $progress = "25%";
+                    $progress = "20%";
                 elseif ($status == "picked up")
-                    $progress = "50%";
+                    $progress = "40%";
                 elseif ($status == "in transit")
-                    $progress = "75%";
+                    $progress = "60%";
+                elseif ($status == "out for delivery")
+                    $progress = "80%";
                 elseif ($status == "delivered")
                     $progress = "100%";
                 ?>
 
-                <div class="card">
+                <div class="card" id="printArea">
+                    <h2 style="text-align:center; display:none;" class="print-title">Courier Tracking Details</h2>
 
                     <h3>Tracking #: <?php echo $result['tracking_number']; ?></h3>
 
@@ -377,7 +409,6 @@ if (isset($_GET['track'])) {
                     </div>
 
                     <div class="info-grid">
-
                         <div class="info-item">
                             <div class="label">Customer Name</div>
                             <div class="value"><?php echo $result['name']; ?></div>
@@ -398,73 +429,63 @@ if (isset($_GET['track'])) {
                             <div class="value"><?php echo $result['tracking_number']; ?></div>
                         </div>
 
-                        <div class="info-item" style="grid-column:span 2;">
-                            <div class="label">Shipment Details</div>
-                            <div class="value"><?php echo $result['shipment_details']; ?></div>
+                        <div class="info-item">
+                            <div class="label">Rider Name</div>
+                            <div class="value">
+                                <?php echo !empty($result['rider_name']) ? $result['rider_name'] : 'Not Assigned'; ?>
+                            </div>
                         </div>
 
+                        <div class="info-item">
+                            <div class="label">Delivery Amount</div>
+                            <div class="value">
+                                Rs.
+                                <?php echo number_format($result['delivery_amount'], 2); ?>
+                            </div>
+                        </div>
+</div>
+                        <div class="info-item" style="grid-column:span 2;margin-top:9px">
+                            <div class="label">Shipment Details</div>
+                            <div class="value">
+                                <?php echo $result['shipment_details']; ?>
+                            </div>
+                        </div>
+
+                        <div class="progress">
+                            <div class="progress-fill" style="width:<?php echo $progress; ?>"></div>
+                        </div>
+
+                        <?php
+                        foreach ($steps as $i => $step) {
+                            $class = ($i <= $current) ? "step active" : "step";
+                            echo "<div class='$class'>" . ucwords($step) . "</div>";
+                        }
+                        ?>
+
+                        <button type="button" class="print-btn" onclick="printStatus()">
+                            🖨️ Print Status
+                        </button>
                     </div>
-
-                    <div class="progress">
-                        <div class="progress-fill" style="width:<?php echo $progress; ?>"></div>
-                    </div>
-
-                    <?php
-                    foreach ($steps as $i => $step) {
-                        $class = ($i <= $current) ? "step active" : "step";
-                        echo "<div class='$class'>" . ucwords($step) . "</div>";
-                    }
-                    ?>
-
-                </div>
-
-            <?php } ?>
-
+</div>
+                <?php } ?>
+            </div>
         </div>
 
-    </div>
-    <br><br><br><br>
-    <footer class="footer">
 
-        <div class="footer-container">
+        <style>
+            @media print {
+                .print-title {
+                    display: block !important;
+                    margin-bottom: 20px;
+                }
+            }
+        </style>
 
-            <div class="footer-box">
-                <h3>Courier Management System</h3>
-                <p>
-                    Delivering trust, speed and reliability
-                    with advanced courier management system.
-                </p>
-            </div>
-
-            <div class="footer-box">
-                <h3>Quick Links</h3>
-                <a href="index.php">Home</a>
-                <a href="about.php">About</a>
-                <a href="track.php">Track Parcel</a>
-                <a href="register.php">Register Now</a>
-
-            </div>
-
-            <div class="footer-box">
-                <h3>Contact Us</h3>
-                <p>Karachi, Pakistan</p>
-                <p>+92 300 1234567</p>
-            </div>
-
-            <div class="footer-box">
-                <h3>Follow Us</h3>
-                <p><a href="https://www.facebook.com/">Facebook</a></p>
-                <p><a href="https://www.instagram.com/?hl=en">Instagram</a></p>
-                <p><a href="https://pk.linkedin.com/">LinkedIn</a></p>
-            </div>
-
-        </div>
-
-        <div class="copyright">
-            © Courier Management System | All Rights Reserved
-        </div>
-
-    </footer>
+        <script>
+            function printStatus() {
+                window.print();
+            }
+        </script>
 </body>
 
 </html>

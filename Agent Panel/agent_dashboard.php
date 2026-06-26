@@ -1,38 +1,30 @@
 <?php
 session_start();
 
-if(!isset($_SESSION['agent_name']))
-{
+if (!isset($_SESSION['agent_name'])) {
     header("Location: agent_login.php");
     exit();
 }
 
 include("../config.php");
 
-/* (Optional ready for branch filtering) */
-// $agent_branch = $_SESSION['agent_branch'];
 
-/* Total Shipments */
 $total_query = mysqli_query($conn, "SELECT COUNT(*) as total FROM users");
 $total_row = mysqli_fetch_assoc($total_query);
 $total_shipments = $total_row['total'];
 
-/* Pending */
 $pending_query = mysqli_query($conn, "SELECT COUNT(*) as total FROM users WHERE status='Pending'");
 $pending_row = mysqli_fetch_assoc($pending_query);
 $pending = $pending_row['total'];
 
-/* Picked Up */
 $picked_query = mysqli_query($conn, "SELECT COUNT(*) as total FROM users WHERE status='Picked Up'");
 $picked_row = mysqli_fetch_assoc($picked_query);
 $picked_up = $picked_row['total'];
 
-/* In Transit */
 $transit_query = mysqli_query($conn, "SELECT COUNT(*) as total FROM users WHERE status='In Transit'");
 $transit_row = mysqli_fetch_assoc($transit_query);
 $in_transit = $transit_row['total'];
 
-/* Delivered */
 $delivered_query = mysqli_query($conn, "SELECT COUNT(*) as total FROM users WHERE status='Delivered'");
 $delivered_row = mysqli_fetch_assoc($delivered_query);
 $delivered = $delivered_row['total'];
@@ -48,16 +40,15 @@ $delivered = $delivered_row['total'];
 
 <body>
 
-    <!-- SIDEBAR -->
     <div class="sidebar">
         <h2>🧑‍💼Agent Panel</h2>
 
         <a href="agent_dashboard.php">Dashboard</a>
         <a href="view_shipments.php">Shipments</a>
+        <a href="riders.php">Riders</a>
         <a href="agent_logout.php">Logout</a>
     </div>
 
-    <!-- MAIN CONTENT -->
     <div class="main">
 
         <h1 style="margin-left:20px">

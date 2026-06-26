@@ -93,7 +93,7 @@ $query = mysqli_query($conn, "SELECT * FROM riders ORDER BY id DESC");
         }
 
         .main {
-            margin-left: 260px;
+            margin-left: 240px;
             padding: 30px;
         }
 
@@ -171,14 +171,12 @@ $query = mysqli_query($conn, "SELECT * FROM riders ORDER BY id DESC");
 <body>
 
     <div class="sidebar">
-        <h2>👑 Admin Panel</h2>
+        <h2>🧑‍💼Agent Panel</h2>
 
-        <a href="admin_dashboard.php">Dashboard</a>
-        <a href="users.php"> Users</a>
-        <a href="agents.php"> Agents</a>
-        <a href="riders.php"> Riders</a>
-        <a href="track.php"> Tracking</a>
-        <a href="logout.php"> Logout</a>
+        <a href="agent_dashboard.php">Dashboard</a>
+        <a href="view_shipments.php">Shipments</a>
+        <a href="riders.php">Riders</a>
+        <a href="agent_logout.php">Logout</a>
     </div>
 
     <div class="main">
