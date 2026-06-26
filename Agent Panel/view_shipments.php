@@ -246,7 +246,7 @@ $result = mysqli_query($conn, "
         <a href="agent_dashboard.php">Dashboard</a>
         <a href="view_shipments.php">Shipments</a>
         <a href="riders.php">Riders</a>
-        <a href="agent_logout.php">Logout</a>
+        <a href="agent_login.php">Logout</a>
     </div>
 
     <div class="main">
