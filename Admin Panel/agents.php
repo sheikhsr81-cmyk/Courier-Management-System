@@ -177,7 +177,7 @@ $query = mysqli_query($conn, "SELECT * FROM agents ORDER BY id DESC");
         <a href="agents.php"> Agents</a>
         <a href="riders.php"> Riders</a>
         <a href="track.php"> Tracking</a>
-        <a href="logout.php"> Logout</a>
+        <a href="admin_login.php"> Logout</a>
     </div>
 
     <div class="main">
