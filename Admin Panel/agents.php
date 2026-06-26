@@ -58,114 +58,6 @@ $query = mysqli_query($conn, "SELECT * FROM agents ORDER BY id DESC");
     <link rel="stylesheet" href="../style.css">
 </head>
 
-<style>
-    body {
-        font-family: 'Segoe UI', sans-serif;
-        background: #f4f6f9;
-    }
-
-    .sidebar {
-        width: 220px;
-        height: 100vh;
-        background: #0f172a;
-        position: fixed;
-        left: 0;
-        top: 0;
-        padding: 20px;
-    }
-
-    .sidebar h2 {
-        color: #fff;
-        margin-bottom: 20px;
-    }
-
-    .sidebar a {
-        display: block;
-        color: #fff;
-        text-decoration: none;
-        padding: 12px;
-        border-radius: 6px;
-        margin-bottom: 8px;
-    }
-
-    .sidebar a:hover {
-        background: #2563eb;
-    }
-
-    .main {
-        margin-left: 240px;
-        padding: 30px;
-    }
-
-    .card {
-        background: #fff;
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, .08);
-        margin-bottom: 20px;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    th {
-        background: #0f172a;
-        color: #fff;
-        padding: 12px;
-    }
-
-    td {
-        padding: 12px;
-        border-bottom: 1px solid #eee;
-        text-align: center;
-    }
-
-    .btn {
-        padding: 6px 10px;
-        border-radius: 5px;
-        text-decoration: none;
-        color: #fff;
-        font-size: 13px;
-        display: inline-block;
-    }
-
-    .edit {
-        background: #0f172a;
-    }
-
-    .delete {
-        background: #dc2626;
-    }
-
-    .action-box {
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-    }
-
-    input {
-        width: 100%;
-        padding: 10px;
-        margin: 8px 0;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-    }
-
-    button {
-        background: #0f172a;
-        color: #fff;
-        border: none;
-        padding: 10px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-    }
-
-    button:hover {
-        background: #1d4ed8;
-    }
-</style>
 
 <body>
 
@@ -182,10 +74,11 @@ $query = mysqli_query($conn, "SELECT * FROM agents ORDER BY id DESC");
 
     <div class="main">
 
-        <h1>Agent Management</h1>
+       
 
         <div class="card">
-
+ <h1>Agent Management</h1>
+ <br>
             <table>
 
                 <tr>
