@@ -47,7 +47,7 @@ if (isset($_POST['register'])) {
 
             background:
                 linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)),
-                url("https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=1600");
+                url("images/login.jpg");
             background-size: cover;
             background-position: center;
         }
