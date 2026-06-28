@@ -49,7 +49,7 @@ if (isset($_POST['login'])) {
 
             background:
                 linear-gradient(rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.88)),
-                url("https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1600");
+                url("images/login.jpg");
             background-size: cover;
             background-position: center;
         }
@@ -110,17 +110,116 @@ if (isset($_POST['login'])) {
             background: #2563eb;
         }
 
-        .footer {
-            text-align: center;
-            margin-top: 15px;
-            font-size: 14px;
-        }
+    
+        /* ==========================
+   TABLET RESPONSIVE
+========================== */
 
-        .footer a {
-            color: #2563eb;
-            text-decoration: none;
-            font-weight: 600;
-        }
+@media (max-width:768px){
+
+    body{
+        padding:20px;
+        overflow-x:hidden;
+    }
+
+    .box{
+        width:100%;
+        max-width:420px;
+        padding:30px;
+    }
+
+    h2{
+        font-size:24px;
+    }
+
+    input{
+        padding:13px;
+        font-size:15px;
+    }
+
+    button{
+        padding:13px;
+        font-size:15px;
+    }
+
+
+
+}
+
+
+/* ==========================
+   MOBILE RESPONSIVE
+========================== */
+
+@media (max-width:480px){
+
+    body{
+        padding:15px;
+        background-position:center;
+    }
+
+    .box{
+        width:100%;
+        max-width:100%;
+        padding:25px 20px;
+        border-radius:15px;
+    }
+
+    h2{
+        font-size:22px;
+        margin-bottom:18px;
+    }
+
+    .msg{
+        font-size:13px;
+    }
+
+    input{
+        padding:12px;
+        font-size:14px;
+        margin:8px 0;
+    }
+
+    button{
+        padding:12px;
+        font-size:15px;
+    }
+
+    .footer{
+        font-size:13px;
+        margin-top:18px;
+        line-height:1.6;
+    }
+
+}
+
+
+/* ==========================
+   SMALL DEVICES
+========================== */
+
+@media (max-width:320px){
+
+    .box{
+        padding:18px 15px;
+    }
+
+    h2{
+        font-size:20px;
+    }
+
+    input{
+        font-size:13px;
+        padding:10px;
+    }
+
+    button{
+        font-size:14px;
+        padding:10px;
+    }
+
+ 
+}
     </style>
 
 </head>
