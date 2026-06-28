@@ -199,7 +199,7 @@ $result = mysqli_query($conn, "
 <body>
 
     <div class="sidebar">
-        <h2>🛵 Rider Panel</h2>
+        <h2>Rider Panel</h2>
         <a href="rider_dashboard.php">Dashboard</a>
         <a href="rider_login.php">Logout</a>
     </div>
