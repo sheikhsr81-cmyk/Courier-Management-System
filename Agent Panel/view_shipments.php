@@ -9,24 +9,77 @@ if (!isset($_SESSION['agent_name'])) {
 
 $showBill = false;
 $billUser = null;
+$errors = [];
+$editData = null;
+
+$allowedStatuses = ['Pending', 'Picked Up', 'In Transit', 'Out For Delivery', 'Delivered'];
+
+function validateShipmentFields($data, $allowedStatuses) {
+    $errors = [];
+
+    if (trim($data['tracking_number'] ?? '') === '') {
+        $errors[] = "Tracking number is required.";
+    } elseif (!preg_match('/^[A-Za-z0-9\-]{3,30}$/', $data['tracking_number'])) {
+        $errors[] = "Tracking number may only contain letters, numbers, and dashes (3-30 chars).";
+    }
+
+    if (trim($data['sender'] ?? '') === '') {
+        $errors[] = "Sender name is required.";
+    } elseif (strlen($data['sender']) > 100) {
+        $errors[] = "Sender name must be 100 characters or fewer.";
+    }
+
+    if (trim($data['phone'] ?? '') === '') {
+        $errors[] = "Phone is required.";
+    } elseif (!preg_match('/^[0-9+\-\s]{7,15}$/', $data['phone'])) {
+        $errors[] = "Phone must be 7-15 digits (may include +, -, spaces).";
+    }
+
+    if (trim($data['shipment_details'] ?? '') === '') {
+        $errors[] = "Shipment details are required.";
+    }
+
+    if (trim($data['address'] ?? '') === '') {
+        $errors[] = "Address is required.";
+    }
+
+    if (!in_array($data['status'] ?? '', $allowedStatuses)) {
+        $errors[] = "Invalid status selected.";
+    }
+
+    if (!empty($data['rider_id']) && !ctype_digit((string)$data['rider_id'])) {
+        $errors[] = "Invalid rider selected.";
+    }
+
+    return $errors;
+}
 
 if (isset($_POST['save_bill'])) {
     $user_id = $_POST['user_id'];
     $amount = $_POST['amount'];
 
-    $gst = $amount * 0.05;
-    $total = $amount + $gst;
+    if (!is_numeric($amount) || (float)$amount <= 0) {
+        $errors[] = "Delivery amount must be a number greater than 0.";
+        // re-show the bill modal with the error
+        $billUser = mysqli_fetch_assoc(
+            mysqli_query($conn, "SELECT * FROM users WHERE id='$user_id'")
+        );
+        $showBill = (bool)$billUser;
+    } else {
+        $gst = $amount * 0.05;
+        $total = $amount + $gst;
 
-    mysqli_query($conn, "
-        UPDATE users
-        SET delivery_amount='$amount',
-            gst='$gst',
-            total_amount='$total'
-        WHERE id='$user_id'
-    ");
+        mysqli_query($conn, "
+            UPDATE users
+            SET delivery_amount='$amount',
+                gst='$gst',
+                total_amount='$total'
+            WHERE id='$user_id'
+        ");
 
-    header("Location:view_shipments.php");
-    exit();
+        header("Location:view_shipments.php");
+        exit();
+    }
 }
 
 if (isset($_POST['save'])) {
@@ -34,15 +87,28 @@ if (isset($_POST['save'])) {
     $status = $_POST['status'];
     $rider_id = $_POST['rider_id'];
 
-    mysqli_query($conn, "
-        UPDATE users
-        SET status='$status',
-            rider_id='$rider_id'
-        WHERE id='$id'
-    ");
+    $inlineErrors = [];
 
-    header("Location:view_shipments.php");
-    exit();
+    if (!in_array($status, $allowedStatuses)) {
+        $inlineErrors[] = "Invalid status selected.";
+    }
+    if (!empty($rider_id) && !ctype_digit((string)$rider_id)) {
+        $inlineErrors[] = "Invalid rider selected.";
+    }
+
+    if (empty($inlineErrors)) {
+        mysqli_query($conn, "
+            UPDATE users
+            SET status='$status',
+                rider_id='$rider_id'
+            WHERE id='$id'
+        ");
+
+        header("Location:view_shipments.php");
+        exit();
+    } else {
+        $errors = $inlineErrors;
+    }
 }
 
 if (isset($_POST['add_shipment'])) {
@@ -54,33 +120,38 @@ if (isset($_POST['add_shipment'])) {
     $status = $_POST['status'];
     $rider_id = $_POST['rider_id'];
 
-    mysqli_query($conn, "
-        INSERT INTO users
-        (
-            name,
-            phone,
-            shipment_details,
-            address,
-            tracking_number,
-            status,
-            rider_id
-        )
-        VALUES
-        (
-            '$sender',
-            '$phone',
-            '$shipment_details',
-            '$address',
-            '$tracking_number',
-            '$status',
-            '$rider_id'
-        )
-    ");
+    $errors = validateShipmentFields($_POST, $allowedStatuses);
 
-    $last_id = mysqli_insert_id($conn);
+    if (empty($errors)) {
+        mysqli_query($conn, "
+            INSERT INTO users
+            (
+                name,
+                phone,
+                shipment_details,
+                address,
+                tracking_number,
+                status,
+                rider_id
+            )
+            VALUES
+            (
+                '$sender',
+                '$phone',
+                '$shipment_details',
+                '$address',
+                '$tracking_number',
+                '$status',
+                '$rider_id'
+            )
+        ");
 
-    header("Location:view_shipments.php?bill=" . $last_id);
-    exit();
+        $last_id = mysqli_insert_id($conn);
+
+        header("Location:view_shipments.php?bill=" . $last_id);
+        exit();
+    }
+    // fall through to redisplay Add form with entered values + errors
 }
 
 if (isset($_GET['bill'])) {
@@ -111,8 +182,6 @@ if (isset($_GET['delete'])) {
     exit();
 }
 
-$editData = null;
-
 if (isset($_GET['edit'])) {
     $id = $_GET['edit'];
 
@@ -128,20 +197,27 @@ if (isset($_GET['edit'])) {
 if (isset($_POST['update_shipment'])) {
     $id = $_POST['id'];
 
-    mysqli_query($conn, "
-        UPDATE users SET
-        tracking_number='" . $_POST['tracking_number'] . "',
-        name='" . $_POST['sender'] . "',
-        phone='" . $_POST['phone'] . "',
-        shipment_details='" . $_POST['shipment_details'] . "',
-        address='" . $_POST['address'] . "',
-        status='" . $_POST['status'] . "',
-        rider_id='" . $_POST['rider_id'] . "'
-        WHERE id='$id'
-    ");
+    $errors = validateShipmentFields($_POST, $allowedStatuses);
 
-    header("Location:view_shipments.php");
-    exit();
+    if (empty($errors)) {
+        mysqli_query($conn, "
+            UPDATE users SET
+            tracking_number='" . $_POST['tracking_number'] . "',
+            name='" . $_POST['sender'] . "',
+            phone='" . $_POST['phone'] . "',
+            shipment_details='" . $_POST['shipment_details'] . "',
+            address='" . $_POST['address'] . "',
+            status='" . $_POST['status'] . "',
+            rider_id='" . $_POST['rider_id'] . "'
+            WHERE id='$id'
+        ");
+
+        header("Location:view_shipments.php");
+        exit();
+    } else {
+        // keep entered data so the edit form redisplays with values intact
+        $editData = $_POST;
+    }
 }
 
 $result = mysqli_query($conn, "
@@ -235,6 +311,28 @@ $result = mysqli_query($conn, "
             margin: 5px;
             background: #0f172a;
         }
+
+        .form-errors {
+            background: #fee2e2;
+            border: 1px solid #dc2626;
+            color: #991b1b;
+            padding: 10px 14px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            text-align: left;
+        }
+
+        .form-errors ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .field-hint {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: -10px;
+            margin-bottom: 8px;
+        }
     </style>
 
 </head>
@@ -242,7 +340,7 @@ $result = mysqli_query($conn, "
 <body>
 
     <div class="sidebar">
-        <h2>🧑‍💼 Agent Panel</h2>
+        <h2> Agent Panel</h2>
         <a href="agent_dashboard.php">Dashboard</a>
         <a href="view_shipments.php">Shipments</a>
         <a href="riders.php">Riders</a>
@@ -255,6 +353,17 @@ $result = mysqli_query($conn, "
         <div class="card">
             <h2>Shipments Management</h2>
             <br>
+
+            <?php if (!empty($errors)) { ?>
+                <div class="form-errors">
+                    <ul>
+                        <?php foreach ($errors as $e) { ?>
+                            <li><?php echo htmlspecialchars($e); ?></li>
+                        <?php } ?>
+                    </ul>
+                </div>
+            <?php } ?>
+
             <table width="100%" cellpadding="10">
 
                 <tr>
@@ -382,47 +491,38 @@ $result = mysqli_query($conn, "
                 <?= $editData ? "Edit Shipment" : "Add Shipment" ?>
 
             </h3>
-
-            <form method="POST">
+<br>
+            <form method="POST" id="shipmentForm" onsubmit="return validateShipmentForm('shipmentForm')" novalidate>
 
                 <?php if ($editData) { ?>
 
-                    <input type="hidden" name="id" value="<?= $editData['id'] ?>">
+                    <input type="hidden" name="id" value="<?= htmlspecialchars($editData['id']) ?>">
 
                 <?php } ?>
 
-                <input type="text" name="tracking_number" placeholder="Tracking Number"
-                    value="<?= $editData['tracking_number'] ?? '' ?>" required>
+                <input type="text" name="tracking_number" placeholder="Tracking Number" maxlength="30"
+                    value="<?= htmlspecialchars($editData['tracking_number'] ?? '') ?>"><br><br>
 
-                <br><br>
+                    <input type="text" name="sender" placeholder="Sender Name" maxlength="100"
+                    value="<?= htmlspecialchars($editData['name'] ?? '') ?>"><br><br>
 
-                <input type="text" name="sender" placeholder="Sender Name" value="<?= $editData['name'] ?? '' ?>"
-                    required>
-
-                <br><br>
-
-                <input type="text" name="phone" placeholder="Phone Number" value="<?= $editData['phone'] ?? '' ?>"
-                    required>
-
-                <br><br>
+                <input type="text" name="phone" placeholder="Phone Number"
+                    value="<?= htmlspecialchars($editData['phone'] ?? '') ?>"><br><br>
 
                 <input type="text" name="shipment_details" placeholder="Shipment Details"
-                    value="<?= $editData['shipment_details'] ?? '' ?>" required>
-
-                <br><br>
-
-                <input type="text" name="address" placeholder="Address" value="<?= $editData['address'] ?? '' ?>"
-                    required>
-
-                <br><br>
+                    value="<?= htmlspecialchars($editData['shipment_details'] ?? '') ?>"><br><br>
+                    
+                <input type="text" name="address" placeholder="Address"
+                    value="<?= htmlspecialchars($editData['address'] ?? '') ?>"><br><br>
 
                 <select name="status">
 
-                    <option value="Pending">Pending</option>
-                    <option value="Picked Up">Picked Up</option>
-                    <option value="In Transit">In Transit</option>
-                    <option value="Out For Delivery">Out For Delivery</option>
-                    <option value="Delivered">Delivered</option>
+                    <?php foreach ($allowedStatuses as $s) { ?>
+                        <option value="<?= htmlspecialchars($s) ?>"
+                            <?= (($editData['status'] ?? '') == $s) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($s) ?>
+                        </option>
+                    <?php } ?>
 
                 </select>
 
@@ -436,10 +536,11 @@ $result = mysqli_query($conn, "
                     $riders = mysqli_query($conn, "SELECT * FROM riders");
 
                     while ($r = mysqli_fetch_assoc($riders)) {
+                        $sel = (isset($editData['rider_id']) && $editData['rider_id'] == $r['id']) ? 'selected' : '';
                         ?>
 
-                        <option value="<?= $r['id'] ?>">
-                            <?= $r['name'] ?>
+                        <option value="<?= $r['id'] ?>" <?= $sel ?>>
+                            <?= htmlspecialchars($r['name']) ?>
                         </option>
 
                     <?php } ?>
@@ -481,7 +582,17 @@ $result = mysqli_query($conn, "
 
                 <h2>🧾 Create Bill</h2>
 
-                <form method="POST">
+                <?php if (!empty($errors)) { ?>
+                    <div class="form-errors">
+                        <ul>
+                            <?php foreach ($errors as $e) { ?>
+                                <li><?php echo htmlspecialchars($e); ?></li>
+                            <?php } ?>
+                        </ul>
+                    </div>
+                <?php } ?>
+
+                <form method="POST" id="billForm" onsubmit="return validateBillForm()">
 
                     <input type="hidden" name="user_id" value="<?php echo $billUser['id']; ?>">
 
@@ -493,8 +604,9 @@ $result = mysqli_query($conn, "
 
                     </p>
 
-                    <input type="number" id="amount" name="amount" placeholder="Delivery Amount" oninput="calcGST()"
-                        required>
+                    <input type="number" id="amount" name="amount" placeholder="Delivery Amount" min="0.01" step="0.01"
+                        oninput="calcGST()">
+                    <small id="amountError" style="color:#dc2626; display:none;">Enter an amount greater than 0.</small>
 
                     <br><br>
 
@@ -547,6 +659,52 @@ $result = mysqli_query($conn, "
 
         function closeModal() {
             document.getElementById('billModal').style.display = 'none';
+        }
+
+        function validateBillForm() {
+            const amountInput = document.getElementById("amount");
+            const amountError = document.getElementById("amountError");
+            const amt = parseFloat(amountInput.value);
+
+            if (isNaN(amt) || amt <= 0) {
+                amountError.style.display = "inline";
+                amountInput.focus();
+                return false;
+            }
+            amountError.style.display = "none";
+            return true;
+        }
+
+        function validateShipmentForm(formId) {
+            const form = document.getElementById(formId);
+            const get = (name) => form.querySelector(`[name="${name}"]`);
+            const errors = [];
+
+            const tracking = get("tracking_number").value.trim();
+            if (!/^[A-Za-z0-9\-]{3,30}$/.test(tracking)) {
+                errors.push("Tracking number may only contain letters, numbers, and dashes (3-30 chars).");
+            }
+
+            const sender = get("sender").value.trim();
+            if (!sender) errors.push("Sender name is required.");
+            else if (sender.length > 100) errors.push("Sender name must be 100 characters or fewer.");
+
+            const phone = get("phone").value.trim();
+            if (!/^[0-9+\-\s]{7,15}$/.test(phone)) {
+                errors.push("Phone must be 7-15 digits (may include +, -, spaces).");
+            }
+
+            const details = get("shipment_details").value.trim();
+            if (!details) errors.push("Shipment details are required.");
+
+            const address = get("address").value.trim();
+            if (!address) errors.push("Address is required.");
+
+            if (errors.length > 0) {
+                alert(errors.join("\n"));
+                return false;
+            }
+            return true;
         }
 
     </script>
