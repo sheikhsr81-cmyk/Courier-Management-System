@@ -3,11 +3,55 @@ include("../config.php");
 session_start();
 
 $editData = null;
+$errors = [];
 
 if (isset($_GET['edit'])) {
     $id = $_GET['edit'];
     $editQuery = mysqli_query($conn, "SELECT * FROM users WHERE id=$id");
     $editData = mysqli_fetch_assoc($editQuery);
+}
+
+// ---------- Validation helper ----------
+function validateUserFields($data)
+{
+    $errors = [];
+
+    if (trim($data['name'] ?? '') === '') {
+        $errors[] = "Name is required.";
+    } elseif (strlen($data['name']) > 100) {
+        $errors[] = "Name must be 100 characters or fewer.";
+    }
+
+    if (trim($data['phone'] ?? '') === '') {
+        $errors[] = "Phone is required.";
+    } elseif (!preg_match('/^[0-9+\-\s]{7,15}$/', $data['phone'])) {
+        $errors[] = "Phone must be 7-15 digits (may include +, -, spaces).";
+    }
+
+    if (trim($data['address'] ?? '') === '') {
+        $errors[] = "Address is required.";
+    }
+
+    if (trim($data['shipment_details'] ?? '') === '') {
+        $errors[] = "Shipment details are required.";
+    }
+
+    if (trim($data['tracking_number'] ?? '') === '') {
+        $errors[] = "Tracking number is required.";
+    } elseif (!preg_match('/^[A-Za-z0-9\-]{3,30}$/', $data['tracking_number'])) {
+        $errors[] = "Tracking number may only contain letters, numbers, and dashes (3-30 chars).";
+    }
+
+    $allowedStatuses = ['Pending', 'Picked Up', 'In Transit', 'Out For Delivery', 'Delivered'];
+    if (!in_array($data['status'] ?? '', $allowedStatuses)) {
+        $errors[] = "Invalid status selected.";
+    }
+
+    if (!empty($data['rider_id']) && !ctype_digit((string) $data['rider_id'])) {
+        $errors[] = "Invalid rider selected.";
+    }
+
+    return $errors;
 }
 
 if (isset($_POST['update_user'])) {
@@ -20,19 +64,26 @@ if (isset($_POST['update_user'])) {
     $status = $_POST['status'];
     $rider_id = $_POST['rider_id'];
 
-    mysqli_query($conn, "UPDATE users SET 
-        name='$name',
-        phone='$phone',
-        address='$address',
-        shipment_details='$shipment_details',
-        tracking_number='$tracking_number',
-        status='$status',
-        rider_id='$rider_id'
-        WHERE id=$id
-    ");
+    $errors = validateUserFields($_POST);
 
-    header("Location: users.php");
-    exit();
+    if (empty($errors)) {
+        mysqli_query($conn, "UPDATE users SET 
+            name='$name',
+            phone='$phone',
+            address='$address',
+            shipment_details='$shipment_details',
+            tracking_number='$tracking_number',
+            status='$status',
+            rider_id='$rider_id'
+            WHERE id=$id
+        ");
+
+        header("Location: users.php");
+        exit();
+    } else {
+        // keep the entered data so the edit form can be redisplayed with values intact
+        $editData = $_POST;
+    }
 }
 
 if (isset($_POST['inline_save'])) {
@@ -40,11 +91,25 @@ if (isset($_POST['inline_save'])) {
     $status = $_POST['status'];
     $rider_id = $_POST['rider_id'];
 
-    mysqli_query($conn, "UPDATE users SET 
-        status='$status',
-        rider_id='$rider_id'
-        WHERE id=$id
-    ");
+    $allowedStatuses = ['Pending', 'Picked Up', 'In Transit', 'Out For Delivery', 'Delivered'];
+    $inlineErrors = [];
+
+    if (!in_array($status, $allowedStatuses)) {
+        $inlineErrors[] = "Invalid status selected.";
+    }
+    if (!empty($rider_id) && !ctype_digit((string) $rider_id)) {
+        $inlineErrors[] = "Invalid rider selected.";
+    }
+
+    if (empty($inlineErrors)) {
+        mysqli_query($conn, "UPDATE users SET 
+            status='$status',
+            rider_id='$rider_id'
+            WHERE id=$id
+        ");
+    } else {
+        $errors = $inlineErrors;
+    }
 
     header("Location: users.php");
     exit();
@@ -60,15 +125,20 @@ if (isset($_POST['add_user'])) {
     $status = $_POST['status'];
     $rider_id = $_POST['rider_id'];
 
-    mysqli_query($conn, "INSERT INTO users 
-    (name,phone,address,shipment_details,tracking_number,status,rider_id)
-    VALUES 
-    ('$name','$phone','$address','$shipment_details','$tracking_number','$status','$rider_id')");
+    $errors = validateUserFields($_POST);
 
-    $_SESSION['new_user_id'] = mysqli_insert_id($conn);
+    if (empty($errors)) {
+        mysqli_query($conn, "INSERT INTO users 
+        (name,phone,address,shipment_details,tracking_number,status,rider_id)
+        VALUES 
+        ('$name','$phone','$address','$shipment_details','$tracking_number','$status','$rider_id')");
 
-    header("Location: users.php?bill=1");
-    exit();
+        $_SESSION['new_user_id'] = mysqli_insert_id($conn);
+
+        header("Location: users.php?bill=1");
+        exit();
+    }
+    // on failure, fall through to redisplay the Add User form with entered values + errors
 }
 
 if (isset($_GET['delete'])) {
@@ -83,19 +153,23 @@ if (isset($_POST['save_bill'])) {
     $user_id = $_POST['user_id'];
     $amount = $_POST['amount'];
 
-    $gst = $amount * 0.05;
-    $total = $amount + $gst;
+    if (!is_numeric($amount) || (float) $amount <= 0) {
+        $errors[] = "Delivery amount must be a number greater than 0.";
+    } else {
+        $gst = $amount * 0.05;
+        $total = $amount + $gst;
 
-    mysqli_query($conn, "UPDATE users SET 
-        delivery_amount='$amount',
-        gst='$gst',
-        total_amount='$total',
-        bill_created=1
-        WHERE id=$user_id
-    ");
+        mysqli_query($conn, "UPDATE users SET 
+            delivery_amount='$amount',
+            gst='$gst',
+            total_amount='$total',
+            bill_created=1
+            WHERE id=$user_id
+        ");
 
-    header("Location: users.php");
-    exit();
+        header("Location: users.php");
+        exit();
+    }
 }
 
 $query = mysqli_query($conn, "
@@ -209,19 +283,40 @@ if (isset($_SESSION['new_user_id'])) {
         border-radius: 10px;
         width: 300px;
     }
+
+    .form-errors {
+        background: #fee2e2;
+        border: 1px solid #dc2626;
+        color: #991b1b;
+        padding: 10px 14px;
+        border-radius: 6px;
+        margin-bottom: 12px;
+    }
+
+    .form-errors ul {
+        margin: 0;
+        padding-left: 18px;
+    }
+
+    .field-hint {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: -8px;
+        margin-bottom: 8px;
+    }
 </style>
 
 <body>
 
     <div class="sidebar">
-        <h2>👑 Admin Panel</h2>
+        <h2 style="margin-right:40px"> Admin Panel</h2>
 
         <a href="admin_dashboard.php"> Dashboard</a>
         <a href="users.php"> Users</a>
         <a href="agents.php"> Agents</a>
         <a href="riders.php"> Riders</a>
         <a href="track.php"> Tracking</a>
-        <a href="admin_login.php"> Logout</a>
+        <a href="logout.php"> Logout</a>
     </div>
 
     <div class="main">
@@ -230,6 +325,17 @@ if (isset($_SESSION['new_user_id'])) {
         <div class="card">
             <h1>User Management</h1>
             <br>
+
+            <?php if (!empty($errors)) { ?>
+                <div class="form-errors">
+                    <ul>
+                        <?php foreach ($errors as $e) { ?>
+                            <li><?php echo htmlspecialchars($e); ?></li>
+                        <?php } ?>
+                    </ul>
+                </div>
+            <?php } ?>
+
             <table width="100%" cellpadding="10">
 
                 <tr>
@@ -245,7 +351,7 @@ if (isset($_SESSION['new_user_id'])) {
 
                 <?php while ($row = mysqli_fetch_assoc($query)) { ?>
 
-                    <form method="POST">
+                    <form method="POST" onsubmit="return true;">
                         <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
 
                         <tr>
@@ -256,7 +362,7 @@ if (isset($_SESSION['new_user_id'])) {
                             <td><?php echo $row['tracking_number']; ?></td>
 
                             <td>
-                                <select name="status">
+                                <select name="status" required>
                                     <?php
                                     $statuses = ['Pending', 'Picked Up', 'In Transit', 'Out For Delivery', 'Delivered'];
                                     foreach ($statuses as $s) {
@@ -309,14 +415,28 @@ if (isset($_SESSION['new_user_id'])) {
 
                 <h3>Edit User</h3>
 
-                <form method="POST">
-                    <input type="hidden" name="id" value="<?php echo $editData['id']; ?>">
+                <form method="POST" id="editForm" onsubmit="return validateUserForm('editForm')" novalidate>
+                    <input type="hidden" name="id" value="<?php echo htmlspecialchars($editData['id']); ?>">
 
-                    <input name="name" value="<?php echo $editData['name']; ?>"><br><br>
-                    <input name="phone" value="<?php echo $editData['phone']; ?>"><br><br>
-                    <input name="address" value="<?php echo $editData['address']; ?>"><br><br>
-                    <input name="shipment_details" value="<?php echo $editData['shipment_details']; ?>"><br><br>
-                    <input name="tracking_number" value="<?php echo $editData['tracking_number']; ?>"><br><br>
+                    <input name="name" placeholder="Name" maxlength="100"
+                        value="<?php echo htmlspecialchars($editData['name'] ?? ''); ?>"><br>
+                    <div class="field-hint">Required, max 100 characters.</div>
+
+                    <input name="phone" placeholder="Phone"
+                        value="<?php echo htmlspecialchars($editData['phone'] ?? ''); ?>"><br>
+                    <div class="field-hint">Required, 7-15 digits (may include + - and spaces).</div>
+
+                    <input name="address" placeholder="Address"
+                        value="<?php echo htmlspecialchars($editData['address'] ?? ''); ?>"><br>
+                    <div class="field-hint">Required.</div>
+
+                    <input name="shipment_details" placeholder="Shipment Details"
+                        value="<?php echo htmlspecialchars($editData['shipment_details'] ?? ''); ?>"><br>
+                    <div class="field-hint">Required.</div>
+
+                    <input name="tracking_number" placeholder="Tracking Number"
+                        value="<?php echo htmlspecialchars($editData['tracking_number'] ?? ''); ?>"><br>
+                    <div class="field-hint">Required, letters/numbers/dashes, 3-30 characters.</div>
 
                     <button name="update_user">Update</button>
                 </form>
@@ -324,27 +444,45 @@ if (isset($_SESSION['new_user_id'])) {
             <?php } else { ?>
 
                 <h3>Add User</h3>
+                <br>
+                <form method="POST" id="addForm" onsubmit="return validateUserForm('addForm')" novalidate>
 
-                <form method="POST">
+                    <input name="name" placeholder="Name" maxlength="100"
+                        value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>"><br>
+                    <br>
+                    <input name="phone" placeholder="Phone"
+                        value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>"><br>
+                    <br>
 
-                    <input name="name" placeholder="Name"><br><br>
-                    <input name="phone" placeholder="Phone"><br><br>
-                    <input name="address" placeholder="Address"><br><br>
-                    <input name="shipment_details" placeholder="Shipment Details"><br><br>
-                    <input name="tracking_number" placeholder="Tracking Number"><br><br>
+                    <input name="address" placeholder="Address"
+                        value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>"><br>
+                    <br>
+
+                    <input name="shipment_details" placeholder="Shipment Details"
+                        value="<?php echo htmlspecialchars($_POST['shipment_details'] ?? ''); ?>"><br>
+                    <br>
+
+                    <input name="tracking_number" placeholder="Tracking Number"
+                        value="<?php echo htmlspecialchars($_POST['tracking_number'] ?? ''); ?>"><br>
+                    <br>
 
                     <select name="status">
-                        <option>Pending</option>
-                        <option>Picked Up</option>
-                        <option>In Transit</option>
-                        <option>Out For Delivery</option>
-                        <option>Delivered</option>
+                        <option <?php echo (($_POST['status'] ?? '') == 'Pending') ? 'selected' : ''; ?>>Pending</option>
+                        <option <?php echo (($_POST['status'] ?? '') == 'Picked Up') ? 'selected' : ''; ?>>Picked Up</option>
+                        <option <?php echo (($_POST['status'] ?? '') == 'In Transit') ? 'selected' : ''; ?>>In Transit
+                        </option>
+                        <option <?php echo (($_POST['status'] ?? '') == 'Out For Delivery') ? 'selected' : ''; ?>>Out For
+                            Delivery</option>
+                        <option <?php echo (($_POST['status'] ?? '') == 'Delivered') ? 'selected' : ''; ?>>Delivered</option>
                     </select><br><br>
 
                     <select name="rider_id">
                         <option value="">None</option>
-                        <?php foreach ($riders as $r) { ?>
-                            <option value="<?php echo $r['id']; ?>"><?php echo $r['name']; ?></option>
+                        <?php foreach ($riders as $r) {
+                            $sel = (isset($_POST['rider_id']) && $_POST['rider_id'] == $r['id']) ? 'selected' : '';
+                            ?>
+                            <option value="<?php echo $r['id']; ?>" <?php echo $sel; ?>>
+                                <?php echo htmlspecialchars($r['name']); ?></option>
                         <?php } ?>
                     </select><br><br>
 
@@ -365,14 +503,16 @@ if (isset($_SESSION['new_user_id'])) {
 
                 <h2>🧾 Create Bill</h2>
 
-                <form method="POST">
+                <form method="POST" id="billForm" onsubmit="return validateBillForm()">
 
                     <input type="hidden" name="user_id" value="<?php echo $billUser['id']; ?>">
 
-                    <p><b>Sender:</b> <?php echo $billUser['name']; ?></p>
+                    <p><b>Sender:</b> <?php echo htmlspecialchars($billUser['name']); ?></p>
 
-                    <input type="number" id="amount" name="amount" placeholder="Delivery Amount" oninput="calcGST()"
-                        required><br><br>
+                    <input type="number" id="amount" name="amount" placeholder="Delivery Amount" min="0.01" step="0.01"
+                        oninput="calcGST()" required><br>
+                    <small id="amountError" style="color:#dc2626; display:none;">Enter an amount greater than 0.</small>
+                    <br><br>
 
                     <input type="text" id="gst" readonly placeholder="GST 5%"><br><br>
 
@@ -400,9 +540,57 @@ if (isset($_SESSION['new_user_id'])) {
             function closeModal() {
                 document.getElementById("billModal").style.display = "none";
             }
+
+            function validateBillForm() {
+                const amountInput = document.getElementById("amount");
+                const amountError = document.getElementById("amountError");
+                const amt = parseFloat(amountInput.value);
+
+                if (isNaN(amt) || amt <= 0) {
+                    amountError.style.display = "inline";
+                    amountInput.focus();
+                    return false;
+                }
+                amountError.style.display = "none";
+                return true;
+            }
         </script>
 
     <?php } ?>
+
+    <script>
+        function validateUserForm(formId) {
+            const form = document.getElementById(formId);
+            const get = (name) => form.querySelector(`[name="${name}"]`);
+            const errors = [];
+
+            const name = get("name").value.trim();
+            if (!name) errors.push("Name is required.");
+            else if (name.length > 100) errors.push("Name must be 100 characters or fewer.");
+
+            const phone = get("phone").value.trim();
+            if (!/^[0-9+\-\s]{7,15}$/.test(phone)) {
+                errors.push("Phone must be 7-15 digits (may include +, -, spaces).");
+            }
+
+            const address = get("address").value.trim();
+            if (!address) errors.push("Address is required.");
+
+            const shipment = get("shipment_details").value.trim();
+            if (!shipment) errors.push("Shipment details are required.");
+
+            const tracking = get("tracking_number").value.trim();
+            if (!/^[A-Za-z0-9\-]{3,30}$/.test(tracking)) {
+                errors.push("Tracking number may only contain letters, numbers, and dashes (3-30 chars).");
+            }
+
+            if (errors.length > 0) {
+                alert(errors.join("\n"));
+                return false;
+            }
+            return true;
+        }
+    </script>
 
 </body>
 
