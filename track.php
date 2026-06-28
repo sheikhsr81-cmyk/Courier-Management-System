@@ -1,5 +1,13 @@
 <?php
 include("config.php");
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: index.php?login_required=1");
+    exit();
+}
+
+$userName = $_SESSION['user_name'] ?? '';
 
 $result = null;
 $error = "";
@@ -27,7 +35,7 @@ if (isset($_GET['track'])) {
 <html>
 
 <head>
-    <title>📦 Track Shipment</title>
+    <title>📍Track Shipment</title>
 
     <style>
         * {
@@ -85,6 +93,20 @@ if (isset($_GET['track'])) {
             background: #1d4ed8;
             color: white !important;
             transform: translateY(-2px);
+        }
+
+        .nav-links .btn.logout-btn {
+            background: #dc2626;
+        }
+
+        .nav-links .btn.logout-btn:hover {
+            background: #b91c1c;
+        }
+
+        .nav-links .welcome-text {
+            color: #cbd5e1;
+            margin-left: 20px;
+            font-size: 14px;
         }
 
         .container {
@@ -272,9 +294,66 @@ if (isset($_GET['track'])) {
             color: #94a3b8;
         }
 
-        @media(max-width:600px) {
-            .info-grid {
-                grid-template-columns: 1fr;
+        /* ==========================
+   TABLET RESPONSIVE
+========================== */
+
+        @media (max-width:768px) {
+
+            body {
+                overflow-x: hidden;
+            }
+
+            .navbar {
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 15px 5%;
+                gap: 15px;
+            }
+
+            .logo {
+                text-align: center;
+            }
+
+            .logo a {
+                font-size: 20px;
+            }
+
+            .nav-links {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: center;
+                gap: 12px;
+                width: 100%;
+            }
+
+            .nav-links a {
+                margin-left: 0;
+            }
+
+            .welcome-text {
+                width: 100%;
+                text-align: center;
+                margin: 0;
+            }
+
+            .container {
+                width: 95%;
+                margin: 30px auto;
+            }
+
+            .header {
+                padding: 22px;
+            }
+
+            .header h2 {
+                font-size: 24px;
+            }
+
+            .content {
+                padding: 20px;
             }
 
             .search-box {
@@ -285,54 +364,180 @@ if (isset($_GET['track'])) {
             .search-box button {
                 width: 100%;
             }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .info-item {
+                width: 100%;
+            }
+
+            .info-item[style] {
+                grid-column: auto !important;
+            }
+
+            .progress {
+                margin: 20px 0;
+            }
+
+            .print-btn {
+                width: 100%;
+            }
+
+            .footer {
+                padding: 50px 5% 20px;
+            }
+
+            .footer-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 25px;
+            }
+
         }
 
-        @media(max-width:768px) {
+
+        /* ==========================
+   MOBILE RESPONSIVE
+========================== */
+
+        @media (max-width:480px) {
+
             body {
                 overflow-x: hidden;
             }
-        }
 
-        @media(max-width:480px) {
-            .header h2 {
+            .navbar {
+                padding: 15px;
+            }
+
+            .logo a {
                 font-size: 18px;
             }
 
+            .nav-links {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .nav-links a,
+            .nav-links .btn {
+                width: 100%;
+                max-width: 260px;
+                text-align: center;
+                margin-left: 0;
+            }
+
+            .welcome-text {
+                text-align: center;
+                margin: 0;
+            }
+
+            .container {
+                width: 96%;
+                border-radius: 12px;
+                margin: 20px auto;
+            }
+
+            .header {
+                padding: 18px;
+            }
+
+            .header h2 {
+                font-size: 20px;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .search-box {
+                gap: 12px;
+            }
+
+            .search-box input {
+                font-size: 15px;
+                padding: 12px;
+            }
+
+            .search-box button {
+                font-size: 15px;
+                padding: 12px;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .card h3 {
+                font-size: 18px;
+                word-break: break-word;
+            }
+
             .badge {
-                font-size: 12px;
+                width: 100%;
+                text-align: center;
+                font-size: 13px;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .info-item {
+                padding: 12px;
+            }
+
+            .label {
+                font-size: 11px;
+            }
+
+            .value {
+                font-size: 14px;
+                word-break: break-word;
+            }
+
+            .progress {
+                height: 8px;
             }
 
             .step {
                 font-size: 14px;
-            }
-        }
-
-        /* --- PRINT SETTINGS --- */
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-
-            #printArea,
-            #printArea * {
-                visibility: visible;
-            }
-
-            #printArea {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin: 0;
-                padding: 0;
-                box-shadow: none;
-                background: white;
+                padding: 10px;
             }
 
             .print-btn {
-                display: none !important;
+                width: 100%;
+                padding: 14px;
+                font-size: 15px;
             }
+
+            .footer {
+                padding: 40px 20px 20px;
+            }
+
+            .footer-container {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .footer-box a:hover {
+                padding-left: 0;
+            }
+
         }
+
+        .shipment-box{
+    grid-column:span 2;
+    margin-top:9px;
+}
+
+@media (max-width:768px){
+    .shipment-box{
+        grid-column:span 1;
+    }
+}
     </style>
 </head>
 
@@ -347,8 +552,10 @@ if (isset($_GET['track'])) {
             <a href="index.php">Home</a>
             <a href="about.php">About</a>
             <a href="track.php">Track</a>
-            <a href="login.php">Login</a>
-            <a href="register.php" class="btn">Register Now</a>
+            <?php if ($userName) { ?>
+                <span class="welcome-text">Hi, <?php echo htmlspecialchars($userName); ?></span>
+            <?php } ?>
+            <a href="logout.php" class="btn logout-btn">Logout</a>
 
         </div>
     </nav>
@@ -385,7 +592,7 @@ if (isset($_GET['track'])) {
                 $current = array_search($status, $steps);
                 if ($current === false)
                     $current = -1;
-                 
+
                 $progress = "10%";
                 if ($status == "pending")
                     $progress = "20%";
@@ -443,49 +650,50 @@ if (isset($_GET['track'])) {
                                 <?php echo number_format($result['delivery_amount'], 2); ?>
                             </div>
                         </div>
-</div>
-                        <div class="info-item" style="grid-column:span 2;margin-top:9px">
-                            <div class="label">Shipment Details</div>
-                            <div class="value">
-                                <?php echo $result['shipment_details']; ?>
-                            </div>
-                        </div>
-
-                        <div class="progress">
-                            <div class="progress-fill" style="width:<?php echo $progress; ?>"></div>
-                        </div>
-
-                        <?php
-                        foreach ($steps as $i => $step) {
-                            $class = ($i <= $current) ? "step active" : "step";
-                            echo "<div class='$class'>" . ucwords($step) . "</div>";
-                        }
-                        ?>
-
-                        <button type="button" class="print-btn" onclick="printStatus()">
-                            🖨️ Print Status
-                        </button>
                     </div>
-</div>
-                <?php } ?>
+
+                    <div class="info-item shipment-box">
+                        <div class="label">Shipment Details</div>
+                        <div class="value">
+                            <?php echo $result['shipment_details']; ?>
+                        </div>
+                    </div>
+
+                    <div class="progress">
+                        <div class="progress-fill" style="width:<?php echo $progress; ?>"></div>
+                    </div>
+
+                    <?php
+                    foreach ($steps as $i => $step) {
+                        $class = ($i <= $current) ? "step active" : "step";
+                        echo "<div class='$class'>" . ucwords($step) . "</div>";
+                    }
+                    ?>
+
+                    <button type="button" class="print-btn" onclick="printStatus()">
+                        🖨️ Print Status
+                    </button>
+                </div>
             </div>
-        </div>
+        <?php } ?>
+    </div>
+    </div>
 
 
-        <style>
-            @media print {
-                .print-title {
-                    display: block !important;
-                    margin-bottom: 20px;
-                }
+    <style>
+        @media print {
+            .print-title {
+                display: block !important;
+                margin-bottom: 20px;
             }
-        </style>
+        }
+    </style>
 
-        <script>
-            function printStatus() {
-                window.print();
-            }
-        </script>
+    <script>
+        function printStatus() {
+            window.print();
+        }
+    </script>
 </body>
 
 </html>
